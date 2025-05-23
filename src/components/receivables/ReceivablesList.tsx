@@ -51,6 +51,13 @@ export default function ReceivablesList({
     }).format(value);
   };
 
+  // Função adequada para formatação de data
+  const formatDate = (date: Date) => {
+    // Criamos uma nova data para garantir que não alteramos o objeto original
+    // Não aplicamos mais o timezone offset, para mostrar a data exata que foi cadastrada
+    return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+  };
+
   if (receivableAccounts.length === 0) {
     return (
       <div className="text-center py-8">
@@ -81,7 +88,7 @@ export default function ReceivablesList({
             <TableCell>{getCategoryName(receivable.categoryId)}</TableCell>
             <TableCell>{formatCurrency(receivable.value)}</TableCell>
             <TableCell>
-              {format(new Date(receivable.dueDate), 'dd/MM/yyyy', { locale: ptBR })}
+              {formatDate(new Date(receivable.dueDate))}
             </TableCell>
             <TableCell>
               <ReceivableStatusBadge receivable={receivable} />
