@@ -39,7 +39,12 @@ export default function Payables() {
   const expenseCategories = categories.filter(cat => cat.type === 'despesa');
 
   const handleEdit = (payable: PayableAccount) => {
-    setEditingPayable(payable);
+    // Garantir que a data está correta ao editar
+    const payableWithFixedDate = {
+      ...payable,
+      dueDate: new Date(payable.dueDate.getTime() + payable.dueDate.getTimezoneOffset() * 60000)
+    };
+    setEditingPayable(payableWithFixedDate);
     setIsFormOpen(true);
   };
 
@@ -190,6 +195,7 @@ export default function Payables() {
     }
     
     const today = new Date();
+    // Ajuste para garantir comparação correta de datas
     const dueDate = new Date(payable.dueDate);
     
     if (dueDate < today) {
@@ -218,6 +224,11 @@ export default function Payables() {
       </div>
     );
   }
+
+  const formatDate = (date: Date) => {
+    // Garantir formatação correta de data
+    return format(new Date(date.getTime() + date.getTimezoneOffset() * 60000), 'dd/MM/yyyy', { locale: ptBR });
+  };
 
   return (
     <div className="space-y-6">
@@ -260,7 +271,7 @@ export default function Payables() {
                     <TableCell>{getCategoryName(payable.categoryId)}</TableCell>
                     <TableCell>{formatCurrency(payable.value)}</TableCell>
                     <TableCell>
-                      {format(new Date(payable.dueDate), 'dd/MM/yyyy', { locale: ptBR })}
+                      {formatDate(new Date(payable.dueDate))}
                     </TableCell>
                     <TableCell>{getStatusBadge(payable)}</TableCell>
                     <TableCell>

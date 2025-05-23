@@ -26,7 +26,12 @@ export default function Receivables() {
   const revenueCategories = categories.filter(cat => cat.type === 'receita');
 
   const handleEdit = (receivable: ReceivableAccount) => {
-    setEditingReceivable(receivable);
+    // Garantir que a data está correta ao editar
+    const receivableWithFixedDate = {
+      ...receivable,
+      dueDate: new Date(receivable.dueDate.getTime() + receivable.dueDate.getTimezoneOffset() * 60000)
+    };
+    setEditingReceivable(receivableWithFixedDate);
     setIsFormOpen(true);
   };
 
