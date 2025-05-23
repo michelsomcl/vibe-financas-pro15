@@ -51,11 +51,31 @@ export default function ReceivablesList({
     }).format(value);
   };
 
-  // Função adequada para formatação de data
-  const formatDate = (date: Date) => {
-    // Criamos uma nova data para garantir que não alteramos o objeto original
-    // Não aplicamos mais o timezone offset, para mostrar a data exata que foi cadastrada
-    return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
+  // Corrigido para mostrar a data exata que foi cadastrada
+  // Sem ajustes de timezone ou conversões que podem alterar o dia
+  const formatDate = (date: Date | string) => {
+    // Certifica-se de que estamos trabalhando com uma string no formato ISO
+    // e extrai apenas a parte da data (YYYY-MM-DD)
+    let dateStr: string;
+    if (date instanceof Date) {
+      dateStr = date.toISOString().split('T')[0];
+    } else {
+      // Se já for uma string, garante que estamos pegando apenas a parte da data
+      dateStr = typeof date === 'string' ? date.split('T')[0] : date;
+    }
+    
+    // Converte a string de data para um objeto Date
+    // Usando o construtor Date com ano, mês, dia para evitar problemas de timezone
+    const parts = dateStr.split('-').map(Number);
+    const year = parts[0];
+    const month = parts[1] - 1; // Mês em JS é 0-indexed
+    const day = parts[2];
+    
+    // Cria uma nova data usando os componentes individuais
+    const dateObj = new Date(year, month, day);
+    
+    // Formata para exibição no formato brasileiro
+    return format(dateObj, 'dd/MM/yyyy', { locale: ptBR });
   };
 
   if (receivableAccounts.length === 0) {
@@ -88,7 +108,7 @@ export default function ReceivablesList({
             <TableCell>{getCategoryName(receivable.categoryId)}</TableCell>
             <TableCell>{formatCurrency(receivable.value)}</TableCell>
             <TableCell>
-              {formatDate(new Date(receivable.dueDate))}
+              {formatDate(receivable.dueDate)}
             </TableCell>
             <TableCell>
               <ReceivableStatusBadge receivable={receivable} />
