@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Categories() {
-  const { categories, setCategories } = useFinance();
+  const { categories, setCategories, payableAccounts, receivableAccounts, transactions } = useFinance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
@@ -120,7 +120,31 @@ export default function Categories() {
     setIsDialogOpen(true);
   };
 
+  // Verifica se a categoria está em uso
+  const isCategoryInUse = (categoryId: string): boolean => {
+    // Verifica se existe alguma conta a pagar que usa essa categoria
+    const usedInPayables = payableAccounts.some(item => item.categoryId === categoryId);
+    
+    // Verifica se existe alguma conta a receber que usa essa categoria
+    const usedInReceivables = receivableAccounts.some(item => item.categoryId === categoryId);
+    
+    // Verifica se existe algum lançamento que usa essa categoria
+    const usedInTransactions = transactions.some(item => item.categoryId === categoryId);
+    
+    return usedInPayables || usedInReceivables || usedInTransactions;
+  };
+
   const handleDelete = async (id: string) => {
+    // Verifica se a categoria está em uso
+    if (isCategoryInUse(id)) {
+      toast({
+        title: "Erro",
+        description: "Não é possível excluir uma categoria que está em uso",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (confirm('Tem certeza que deseja excluir esta categoria?')) {
       try {
         // Excluir do Supabase
