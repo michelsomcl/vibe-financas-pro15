@@ -44,6 +44,15 @@ export default function Transactions() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Função para criar data a partir de string sem problemas de timezone
+  const parseDate = (dateString: string) => {
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date(dateString);
+  };
+
   // Função para formatar data corretamente
   const formatDate = (dateInput: string | Date) => {
     let date: Date;
@@ -97,17 +106,25 @@ export default function Transactions() {
       filtered = filtered.filter(transaction => transaction.type === typeFilter);
     }
 
-    // Filtro por período
+    // Filtro por período - corrigido para evitar problemas de timezone
     if (startDate) {
-      filtered = filtered.filter(transaction => 
-        new Date(transaction.paymentDate) >= new Date(startDate)
-      );
+      const filterStartDate = parseDate(startDate);
+      filtered = filtered.filter(transaction => {
+        const transactionDate = typeof transaction.paymentDate === 'string' 
+          ? parseDate(transaction.paymentDate.split('T')[0])
+          : transaction.paymentDate;
+        return transactionDate >= filterStartDate;
+      });
     }
 
     if (endDate) {
-      filtered = filtered.filter(transaction => 
-        new Date(transaction.paymentDate) <= new Date(endDate)
-      );
+      const filterEndDate = parseDate(endDate);
+      filtered = filtered.filter(transaction => {
+        const transactionDate = typeof transaction.paymentDate === 'string' 
+          ? parseDate(transaction.paymentDate.split('T')[0])
+          : transaction.paymentDate;
+        return transactionDate <= filterEndDate;
+      });
     }
 
     return filtered.sort((a, b) => 
