@@ -49,8 +49,15 @@ export default function Transactions() {
     let date: Date;
     
     if (typeof dateInput === 'string') {
-      // Se for string, adiciona horário para evitar problemas de timezone
-      date = new Date(dateInput + 'T00:00:00');
+      // Parse da string sem adicionar timezone para evitar conversões UTC
+      const parts = dateInput.split('T')[0].split('-');
+      if (parts.length === 3) {
+        // Cria a data usando os valores exatos (ano, mês-1, dia)
+        date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else {
+        // Fallback para o método anterior
+        date = new Date(dateInput + 'T00:00:00');
+      }
     } else {
       // Se já for Date, usa diretamente
       date = dateInput;
