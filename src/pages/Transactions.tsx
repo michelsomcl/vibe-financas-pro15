@@ -14,9 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import TransactionForm from "@/components/transactions/TransactionForm";
 import { Transaction } from "@/types";
 import {
   Dialog,
@@ -24,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import TransactionForm from "@/components/transactions/TransactionForm";
 
 export default function Transactions() {
   const { 
@@ -45,6 +43,15 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Função para formatar data corretamente
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions;
@@ -395,7 +402,7 @@ export default function Transactions() {
                       {transaction.type === 'receita' ? '+' : '-'}{formatCurrency(transaction.value)}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(transaction.paymentDate), 'dd/MM/yyyy', { locale: ptBR })}
+                      {formatDate(transaction.paymentDate)}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
