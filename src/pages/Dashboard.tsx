@@ -29,13 +29,26 @@ export default function Dashboard() {
     return paymentDate >= monthStart && paymentDate <= monthEnd;
   });
 
-  // Calcular totais
+  // Calcular totais incluindo lançamentos manuais
   const paidExpenses = currentMonthPayables.filter(p => p.isPaid).reduce((sum, p) => sum + p.value, 0);
   const unpaidExpenses = currentMonthPayables.filter(p => !p.isPaid).reduce((sum, p) => sum + p.value, 0);
   const receivedRevenues = currentMonthReceivables.filter(r => r.isReceived).reduce((sum, r) => sum + r.value, 0);
   const unreceiveredRevenues = currentMonthReceivables.filter(r => !r.isReceived).reduce((sum, r) => sum + r.value, 0);
 
-  const balancePaid = receivedRevenues - paidExpenses;
+  // Incluir lançamentos manuais nos totais
+  const manualExpenses = currentMonthTransactions
+    .filter(t => t.type === 'despesa')
+    .reduce((sum, t) => sum + t.value, 0);
+
+  const manualRevenues = currentMonthTransactions
+    .filter(t => t.type === 'receita')
+    .reduce((sum, t) => sum + t.value, 0);
+
+  // Totais finais incluindo lançamentos manuais
+  const totalPaidExpenses = paidExpenses + manualExpenses;
+  const totalReceivedRevenues = receivedRevenues + manualRevenues;
+
+  const balancePaid = totalReceivedRevenues - totalPaidExpenses;
   const balanceUnpaid = unreceiveredRevenues - unpaidExpenses;
 
   // Contas vencidas
@@ -89,7 +102,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(paidExpenses)}
+              {formatCurrency(totalPaidExpenses)}
             </div>
           </CardContent>
         </Card>
@@ -115,7 +128,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(receivedRevenues)}
+              {formatCurrency(totalReceivedRevenues)}
             </div>
           </CardContent>
         </Card>

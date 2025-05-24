@@ -18,6 +18,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import TransactionForm from "@/components/transactions/TransactionForm";
 import { Transaction } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Transactions() {
   const { 
@@ -193,6 +199,11 @@ export default function Transactions() {
   };
 
   const handleFormSubmit = () => {
+    setIsFormOpen(false);
+    setEditingTransaction(null);
+  };
+
+  const handleFormCancel = () => {
     setIsFormOpen(false);
     setEditingTransaction(null);
   };
@@ -420,16 +431,21 @@ export default function Transactions() {
         </CardContent>
       </Card>
 
-      {isFormOpen && (
-        <TransactionForm
-          transaction={editingTransaction}
-          onSubmit={handleFormSubmit}
-          onCancel={() => {
-            setIsFormOpen(false);
-            setEditingTransaction(null);
-          }}
-        />
-      )}
+      {/* Dialog do Formulário */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTransaction ? 'Editar' : 'Novo'} Lançamento
+            </DialogTitle>
+          </DialogHeader>
+          <TransactionForm
+            transaction={editingTransaction}
+            onSubmit={handleFormSubmit}
+            onCancel={handleFormCancel}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
