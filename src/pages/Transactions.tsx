@@ -45,8 +45,17 @@ export default function Transactions() {
   const [endDate, setEndDate] = useState('');
 
   // Função para formatar data corretamente
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00');
+  const formatDate = (dateInput: string | Date) => {
+    let date: Date;
+    
+    if (typeof dateInput === 'string') {
+      // Se for string, adiciona horário para evitar problemas de timezone
+      date = new Date(dateInput + 'T00:00:00');
+    } else {
+      // Se já for Date, usa diretamente
+      date = dateInput;
+    }
+    
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
