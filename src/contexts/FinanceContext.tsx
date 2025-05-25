@@ -100,6 +100,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           id: item.id,
           supplierId: item.supplier_id,
           categoryId: item.category_id,
+          accountId: item.account_id || undefined,
           value: Number(item.value),
           dueDate: new Date(item.due_date),
           observations: item.observations || undefined,
@@ -119,6 +120,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           id: item.id,
           clientId: item.client_id,
           categoryId: item.category_id,
+          accountId: item.account_id || undefined,
           value: Number(item.value),
           dueDate: new Date(item.due_date),
           observations: item.observations || undefined,
@@ -139,6 +141,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           type: item.type as 'receita' | 'despesa',
           clientSupplierId: item.client_supplier_id,
           categoryId: item.category_id,
+          accountId: item.account_id || '',
           value: Number(item.value),
           paymentDate: new Date(item.payment_date),
           observations: item.observations || undefined,
@@ -166,6 +169,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         .insert([{
           supplier_id: payable.supplierId,
           category_id: payable.categoryId,
+          account_id: payable.accountId,
           value: payable.value,
           due_date: payable.dueDate.toISOString().split('T')[0],
           observations: payable.observations,
@@ -187,6 +191,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           id: data.id,
           supplierId: data.supplier_id,
           categoryId: data.category_id,
+          accountId: data.account_id || undefined,
           value: Number(data.value),
           dueDate: new Date(data.due_date),
           observations: data.observations || undefined,
@@ -222,6 +227,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       
       if (updates.supplierId) updateData.supplier_id = updates.supplierId;
       if (updates.categoryId) updateData.category_id = updates.categoryId;
+      if (updates.accountId !== undefined) updateData.account_id = updates.accountId;
       if (updates.value !== undefined) updateData.value = updates.value;
       if (updates.dueDate) updateData.due_date = updates.dueDate.toISOString().split('T')[0];
       if (updates.observations !== undefined) updateData.observations = updates.observations;
@@ -292,6 +298,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         .insert([{
           client_id: receivable.clientId,
           category_id: receivable.categoryId,
+          account_id: receivable.accountId,
           value: receivable.value,
           due_date: receivable.dueDate.toISOString().split('T')[0],
           observations: receivable.observations,
@@ -313,6 +320,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           id: data.id,
           clientId: data.client_id,
           categoryId: data.category_id,
+          accountId: data.account_id || undefined,
           value: Number(data.value),
           dueDate: new Date(data.due_date),
           observations: data.observations || undefined,
@@ -349,6 +357,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       
       if (updates.clientId) updateData.client_id = updates.clientId;
       if (updates.categoryId) updateData.category_id = updates.categoryId;
+      if (updates.accountId !== undefined) updateData.account_id = updates.accountId;
       if (updates.value !== undefined) updateData.value = updates.value;
       if (updates.dueDate) updateData.due_date = updates.dueDate.toISOString().split('T')[0];
       if (updates.observations !== undefined) updateData.observations = updates.observations;
@@ -420,6 +429,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           type: transaction.type,
           client_supplier_id: transaction.clientSupplierId,
           category_id: transaction.categoryId,
+          account_id: transaction.accountId,
           value: transaction.value,
           payment_date: transaction.paymentDate.toISOString().split('T')[0],
           observations: transaction.observations,
@@ -437,6 +447,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           type: data.type as 'receita' | 'despesa',
           clientSupplierId: data.client_supplier_id,
           categoryId: data.category_id,
+          accountId: data.account_id,
           value: Number(data.value),
           paymentDate: new Date(data.payment_date),
           observations: data.observations || undefined,
@@ -468,6 +479,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (updates.type) updateData.type = updates.type;
       if (updates.clientSupplierId) updateData.client_supplier_id = updates.clientSupplierId;
       if (updates.categoryId) updateData.category_id = updates.categoryId;
+      if (updates.accountId !== undefined) updateData.account_id = updates.accountId;
       if (updates.value !== undefined) updateData.value = updates.value;
       if (updates.paymentDate) updateData.payment_date = updates.paymentDate.toISOString().split('T')[0];
       if (updates.observations !== undefined) updateData.observations = updates.observations;

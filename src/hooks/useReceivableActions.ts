@@ -14,8 +14,18 @@ export function useReceivableActions() {
   } = useFinance();
   const { toast } = useToast();
 
-  const handleMarkAsReceived = async (receivable: ReceivableAccount) => {
+  const handleMarkAsReceived = async (receivable: ReceivableAccount, accountId?: string) => {
     try {
+      // Check if an account is required but not provided
+      if (!receivable.accountId && !accountId) {
+        toast({
+          title: "Erro",
+          description: "É necessário selecionar uma conta para confirmar o recebimento.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // First check if a transaction for this receivable already exists
       const existingTransaction = transactions.find(
         t => t.sourceType === 'receivable' && t.sourceId === receivable.id
@@ -25,7 +35,8 @@ export function useReceivableActions() {
         // If a transaction already exists, just update the receivable status
         await updateReceivableAccount(receivable.id, {
           isReceived: true,
-          receivedDate: new Date()
+          receivedDate: new Date(),
+          accountId: accountId || receivable.accountId
         });
         
         toast({
@@ -37,9 +48,12 @@ export function useReceivableActions() {
 
       // Update the receivable to mark it as received FIRST
       const receivedDate = new Date();
+      const finalAccountId = accountId || receivable.accountId;
+      
       await updateReceivableAccount(receivable.id, {
         isReceived: true,
-        receivedDate
+        receivedDate,
+        accountId: finalAccountId
       });
       
       // Create a corresponding transaction for this receipt ONLY if one doesn't exist
@@ -50,6 +64,7 @@ export function useReceivableActions() {
         type: 'receita',
         clientSupplierId: receivable.clientId,
         categoryId: receivable.categoryId,
+        accountId: finalAccountId!,
         value: transactionValue, // Ensure we're using the exact value without rounding issues
         paymentDate: receivedDate,
         observations: receivable.observations,

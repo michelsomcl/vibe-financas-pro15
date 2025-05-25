@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { useFinance } from "@/contexts/FinanceContext";
 import ReceivableForm from "@/components/receivables/ReceivableForm";
 import ReceivablesList from "@/components/receivables/ReceivablesList";
+import ReceivableAccountDialog from "@/components/receivables/ReceivableAccountDialog";
 import { ReceivableAccount } from "@/types";
 import { useReceivableActions } from "@/hooks/useReceivableActions";
 
@@ -19,6 +20,8 @@ export default function Receivables() {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReceivable, setEditingReceivable] = useState<ReceivableAccount | null>(null);
+  const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
+  const [receivableForPayment, setReceivableForPayment] = useState<ReceivableAccount | null>(null);
   
   const { handleMarkAsReceived, handleMarkAsNotReceived, handleDelete } = useReceivableActions();
 
@@ -38,6 +41,22 @@ export default function Receivables() {
   const handleFormSubmit = () => {
     setIsFormOpen(false);
     setEditingReceivable(null);
+  };
+
+  const handleMarkAsReceivedClick = (receivable: ReceivableAccount) => {
+    if (!receivable.accountId) {
+      setReceivableForPayment(receivable);
+      setIsAccountDialogOpen(true);
+    } else {
+      handleMarkAsReceived(receivable);
+    }
+  };
+
+  const handleAccountSelected = (accountId: string) => {
+    if (receivableForPayment) {
+      handleMarkAsReceived(receivableForPayment, accountId);
+      setReceivableForPayment(null);
+    }
   };
 
   if (loading) {
@@ -72,7 +91,7 @@ export default function Receivables() {
             receivableAccounts={receivableAccounts}
             clients={clients}
             revenueCategories={revenueCategories}
-            onMarkAsReceived={handleMarkAsReceived}
+            onMarkAsReceived={handleMarkAsReceivedClick}
             onMarkAsNotReceived={handleMarkAsNotReceived}
             onEdit={handleEdit}
             onDelete={handleDelete}
@@ -90,6 +109,15 @@ export default function Receivables() {
           }}
         />
       )}
+
+      <ReceivableAccountDialog
+        isOpen={isAccountDialogOpen}
+        onClose={() => {
+          setIsAccountDialogOpen(false);
+          setReceivableForPayment(null);
+        }}
+        onConfirm={handleAccountSelected}
+      />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +20,7 @@ import { cn } from "@/lib/utils";
 const formSchema = z.object({
   clientId: z.string().min(1, 'Selecione um cliente'),
   categoryId: z.string().min(1, 'Selecione uma categoria'),
+  accountId: z.string().optional(),
   value: z.string().min(1, 'Valor é obrigatório'),
   dueDate: z.date({
     required_error: 'Data de vencimento é obrigatória',
@@ -39,7 +39,7 @@ interface ReceivableFormProps {
 }
 
 export default function ReceivableForm({ receivable, onSubmit, onCancel }: ReceivableFormProps) {
-  const { clientsSuppliers, categories, addReceivableAccount, updateReceivableAccount, addCategory, addClientSupplier } = useFinance();
+  const { clientsSuppliers, categories, accounts, addReceivableAccount, updateReceivableAccount, addCategory, addClientSupplier } = useFinance();
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -54,6 +54,7 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
     defaultValues: {
       clientId: receivable?.clientId || '',
       categoryId: receivable?.categoryId || '',
+      accountId: receivable?.accountId || '',
       value: receivable?.value.toString() || '',
       dueDate: receivable?.dueDate ? new Date(receivable.dueDate) : undefined,
       observations: receivable?.observations || '',
@@ -70,6 +71,7 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
     const receivableData = {
       clientId: values.clientId,
       categoryId: values.categoryId,
+      accountId: values.accountId || undefined,
       value: parseFloat(values.value),
       dueDate: values.dueDate,
       observations: values.observations,
@@ -199,6 +201,32 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="accountId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Conta (Opcional)</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma conta (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma conta selecionada</SelectItem>
+                        {accounts.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.name} - {account.type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {showNewClientForm && (
               <Card className="p-4 bg-gray-50">
