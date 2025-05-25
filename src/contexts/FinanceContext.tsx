@@ -28,6 +28,8 @@ interface FinanceContextType {
   deleteTransaction: (id: string) => Promise<void>;
   addCategory: (category: Omit<Category, 'id' | 'createdAt'>) => Promise<void>;
   addClientSupplier: (client: Omit<ClientSupplier, 'id' | 'createdAt'>) => Promise<void>;
+  updateClientSupplier: (id: string, updates: Partial<ClientSupplier>) => Promise<void>;
+  deleteClientSupplier: (id: string) => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -600,6 +602,121 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateClientSupplier = async (id: string, updates: Partial<ClientSupplier>) => {
+    try {
+      const updateData: any = {};
+      
+      if (updates.name) updateData.name = updates.name;
+      if (updates.type) updateData.type = updates.type;
+      if (updates.observations !== undefined) updateData.observations = updates.observations;
+
+      const { error } = await supabase
+        .from('clients_suppliers')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setClientsSuppliers(prev => 
+        prev.map(item => 
+          item.id === id ? { ...item, ...updates } : item
+        )
+      );
+
+      toast({
+        title: "Sucesso",
+        description: `${updates.type === 'cliente' ? 'Cliente' : 'Fornecedor'} atualizado com sucesso`
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar cliente/fornecedor:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar cliente/fornecedor",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteClientSupplier = async (id: string) => {
+    try {
+      // Verificar se há transações vinculadas a este cliente/fornecedor
+      const { data: relatedTransactions, error: transactionError } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('client_supplier_id', id)
+        .limit(1);
+
+      if (transactionError) throw transactionError;
+
+      if (relatedTransactions && relatedTransactions.length > 0) {
+        toast({
+          title: "Erro",
+          description: "Não é possível excluir este cliente/fornecedor pois existem lançamentos vinculados a ele",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verificar se há contas a pagar vinculadas a este fornecedor
+      const { data: relatedPayables, error: payableError } = await supabase
+        .from('payable_accounts')
+        .select('id')
+        .eq('supplier_id', id)
+        .limit(1);
+
+      if (payableError) throw payableError;
+
+      if (relatedPayables && relatedPayables.length > 0) {
+        toast({
+          title: "Erro",
+          description: "Não é possível excluir este fornecedor pois existem contas a pagar vinculadas a ele",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verificar se há contas a receber vinculadas a este cliente
+      const { data: relatedReceivables, error: receivableError } = await supabase
+        .from('receivable_accounts')
+        .select('id')
+        .eq('client_id', id)
+        .limit(1);
+
+      if (receivableError) throw receivableError;
+
+      if (relatedReceivables && relatedReceivables.length > 0) {
+        toast({
+          title: "Erro",
+          description: "Não é possível excluir este cliente pois existem contas a receber vinculadas a ele",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Se passou por todas as verificações, pode excluir
+      const { error } = await supabase
+        .from('clients_suppliers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setClientsSuppliers(prev => prev.filter(item => item.id !== id));
+      
+      toast({
+        title: "Sucesso",
+        description: "Cliente/Fornecedor excluído com sucesso"
+      });
+    } catch (error) {
+      console.error('Erro ao excluir cliente/fornecedor:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir cliente/fornecedor",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -630,6 +747,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       deleteTransaction,
       addCategory,
       addClientSupplier,
+      updateClientSupplier,
+      deleteClientSupplier,
     }}>
       {children}
     </FinanceContext.Provider>

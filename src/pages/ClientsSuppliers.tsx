@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 export default function ClientsSuppliers() {
-  const { clientsSuppliers, addClientSupplier, loading } = useFinance();
+  const { clientsSuppliers, addClientSupplier, updateClientSupplier, deleteClientSupplier, loading } = useFinance();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ClientSupplier | null>(null);
   const [formData, setFormData] = useState({
@@ -45,10 +44,10 @@ export default function ClientsSuppliers() {
     }
 
     if (editingItem) {
-      // TODO: Implementar função de update no contexto
-      toast({
-        title: "Info",
-        description: "Função de edição será implementada em breve",
+      await updateClientSupplier(editingItem.id, {
+        name: formData.name,
+        type: formData.type,
+        observations: formData.observations,
       });
     } else {
       await addClientSupplier({
@@ -74,11 +73,7 @@ export default function ClientsSuppliers() {
 
   const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este item?')) {
-      // TODO: Implementar função de delete no contexto
-      toast({
-        title: "Info",
-        description: "Função de exclusão será implementada em breve",
-      });
+      deleteClientSupplier(id);
     }
   };
 
@@ -127,7 +122,7 @@ export default function ClientsSuppliers() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} 
                   placeholder="Nome do cliente ou fornecedor"
                 />
               </div>
@@ -155,7 +150,7 @@ export default function ClientsSuppliers() {
                 <Textarea
                   id="observations"
                   value={formData.observations}
-                  onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))} 
                   placeholder="Observações adicionais (opcional)"
                   rows={3}
                 />
