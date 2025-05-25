@@ -53,6 +53,20 @@ export default function Transactions() {
     return new Date(dateString);
   };
 
+  // Função para extrair apenas a data (YYYY-MM-DD) de uma string de data
+  const getDateOnly = (dateInput: string | Date): string => {
+    if (typeof dateInput === 'string') {
+      // Se for string, pega apenas a parte da data (antes do T se houver)
+      return dateInput.split('T')[0];
+    } else {
+      // Se for Date, converte para YYYY-MM-DD
+      const year = dateInput.getFullYear();
+      const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+      const day = String(dateInput.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  };
+
   // Função para formatar data corretamente
   const formatDate = (dateInput: string | Date) => {
     let date: Date;
@@ -106,24 +120,18 @@ export default function Transactions() {
       filtered = filtered.filter(transaction => transaction.type === typeFilter);
     }
 
-    // Filtro por período - corrigido para evitar problemas de timezone
+    // Filtro por período - corrigido para comparar apenas as datas (sem horário)
     if (startDate) {
-      const filterStartDate = parseDate(startDate);
       filtered = filtered.filter(transaction => {
-        const transactionDate = typeof transaction.paymentDate === 'string' 
-          ? parseDate(transaction.paymentDate.split('T')[0])
-          : transaction.paymentDate;
-        return transactionDate >= filterStartDate;
+        const transactionDateOnly = getDateOnly(transaction.paymentDate);
+        return transactionDateOnly >= startDate;
       });
     }
 
     if (endDate) {
-      const filterEndDate = parseDate(endDate);
       filtered = filtered.filter(transaction => {
-        const transactionDate = typeof transaction.paymentDate === 'string' 
-          ? parseDate(transaction.paymentDate.split('T')[0])
-          : transaction.paymentDate;
-        return transactionDate <= filterEndDate;
+        const transactionDateOnly = getDateOnly(transaction.paymentDate);
+        return transactionDateOnly <= endDate;
       });
     }
 
