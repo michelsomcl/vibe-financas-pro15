@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
   const { 
     categories, 
     clientsSuppliers, 
+    accounts,
     addPayableAccount, 
     updatePayableAccount, 
     addCategory, 
@@ -29,6 +29,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
   const [formData, setFormData] = useState({
     supplierId: '',
     categoryId: '',
+    accountId: '',
     value: '',
     dueDate: '',
     observations: '',
@@ -53,6 +54,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
       setFormData({
         supplierId: payable.supplierId,
         categoryId: payable.categoryId,
+        accountId: payable.accountId || '',
         value: payable.value.toString(),
         dueDate: format(new Date(payable.dueDate), 'yyyy-MM-dd'),
         observations: payable.observations || '',
@@ -69,7 +71,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.supplierId || !formData.categoryId || !formData.value || !formData.dueDate) {
+    if (!formData.supplierId || !formData.categoryId || !formData.accountId || !formData.value || !formData.dueDate) {
       alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
@@ -77,6 +79,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
     const payableData = {
       supplierId: formData.supplierId,
       categoryId: formData.categoryId,
+      accountId: formData.accountId,
       value: parseFloat(formData.value),
       dueDate: new Date(formData.dueDate),
       observations: formData.observations || undefined,
@@ -201,13 +204,29 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="account">Conta *</Label>
+                <Select value={formData.accountId} onValueChange={(value) => setFormData(prev => ({ ...prev, accountId: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name} - {account.type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="value">Valor *</Label>
                 <Input
                   id="value"
                   type="number"
                   step="0.01"
                   value={formData.value}
-                  onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))} 
                   placeholder="0.00"
                   required
                 />
@@ -219,7 +238,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))} 
                   required
                 />
               </div>
@@ -245,7 +264,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
                     id="installments"
                     type="number"
                     value={formData.installments}
-                    onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, installments: e.target.value }))} 
                     placeholder="Ex: 12"
                   />
                 </div>
@@ -274,7 +293,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
                       id="recurrenceCount"
                       type="number"
                       value={formData.recurrenceCount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, recurrenceCount: e.target.value }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurrenceCount: e.target.value }))} 
                       placeholder="Ex: 12 (deixe vazio para infinito)"
                     />
                   </div>
@@ -287,7 +306,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
               <Textarea
                 id="observations"
                 value={formData.observations}
-                onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, observations: e.target.value }))} 
                 placeholder="Observações adicionais..."
                 rows={3}
               />
@@ -300,7 +319,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
                     type="checkbox"
                     id="isPaid"
                     checked={formData.isPaid}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isPaid: e.target.checked }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isPaid: e.target.checked }))} 
                   />
                   <Label htmlFor="isPaid">Conta paga</Label>
                 </div>
@@ -312,7 +331,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
                       id="paidDate"
                       type="date"
                       value={formData.paidDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paidDate: e.target.value }))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paidDate: e.target.value }))} 
                     />
                   </div>
                 )}

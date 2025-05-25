@@ -1,3 +1,4 @@
+
 export interface Account {
   id: string;
   name: string;
@@ -26,6 +27,7 @@ export interface PayableAccount {
   id: string;
   supplierId: string;
   categoryId: string;
+  accountId?: string; // Novo campo obrigatório
   value: number;
   dueDate: Date;
   observations?: string;
@@ -43,6 +45,7 @@ export interface ReceivableAccount {
   id: string;
   clientId: string;
   categoryId: string;
+  accountId?: string; // Novo campo obrigatório
   value: number;
   dueDate: Date;
   observations?: string;
@@ -61,6 +64,7 @@ export interface Transaction {
   type: 'receita' | 'despesa';
   clientSupplierId: string;
   categoryId: string;
+  accountId: string; // Novo campo obrigatório
   value: number;
   paymentDate: Date;
   observations?: string;

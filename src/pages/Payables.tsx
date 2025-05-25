@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,12 +17,21 @@ import { ptBR } from "date-fns/locale";
 import PayableForm from "@/components/payables/PayableForm";
 import { PayableAccount } from "@/types";
 import { toast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 export default function Payables() {
   const { 
     payableAccounts, 
     categories, 
     clientsSuppliers, 
+    accounts,
     loading, 
     updatePayableAccount, 
     deletePayableAccount,
@@ -34,6 +42,9 @@ export default function Payables() {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPayable, setEditingPayable] = useState<PayableAccount | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedPayable, setSelectedPayable] = useState<PayableAccount | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   const suppliers = clientsSuppliers.filter(cs => cs.type === 'fornecedor');
   const expenseCategories = categories.filter(cat => cat.type === 'despesa');
@@ -84,14 +95,18 @@ export default function Payables() {
   };
 
   const handleMarkAsPaid = async (payable: PayableAccount) => {
+    if (!payable.accountId) {
+      setSelectedPayable(payable);
+      setPaymentDialogOpen(true);
+      return;
+    }
+
     try {
-      // First check if a transaction for this payable already exists
       const existingTransaction = transactions.find(
         t => t.sourceType === 'payable' && t.sourceId === payable.id
       );
       
       if (existingTransaction) {
-        // If a transaction already exists, just update the payable status
         await updatePayableAccount(payable.id, {
           isPaid: true,
           paidDate: new Date()
@@ -101,27 +116,77 @@ export default function Payables() {
           title: "Status atualizado",
           description: "A conta foi marcada como paga."
         });
-        return; // Return early to prevent duplicate transaction creation
+        return;
       }
       
-      // 1. Atualiza a conta para paga
       const paidDate = new Date();
       await updatePayableAccount(payable.id, {
         isPaid: true,
         paidDate
       });
       
-      // 2. Cria um lançamento correspondente a este pagamento
       await addTransaction({
         type: 'despesa',
         clientSupplierId: payable.supplierId,
         categoryId: payable.categoryId,
+        accountId: payable.accountId,
         value: payable.value,
         paymentDate: paidDate,
         observations: payable.observations,
         sourceType: 'payable',
         sourceId: payable.id
       });
+      
+      toast({
+        title: "Pagamento registrado",
+        description: "O pagamento foi registrado e adicionado aos lançamentos."
+      });
+    } catch (error) {
+      console.error('Erro ao registrar pagamento:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao registrar o pagamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedPayable || !selectedAccountId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma conta para o pagamento.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const paidDate = new Date();
+      
+      // Atualizar a conta a pagar com a conta selecionada
+      await updatePayableAccount(selectedPayable.id, {
+        isPaid: true,
+        paidDate,
+        accountId: selectedAccountId
+      });
+      
+      // Criar o lançamento
+      await addTransaction({
+        type: 'despesa',
+        clientSupplierId: selectedPayable.supplierId,
+        categoryId: selectedPayable.categoryId,
+        accountId: selectedAccountId,
+        value: selectedPayable.value,
+        paymentDate: paidDate,
+        observations: selectedPayable.observations,
+        sourceType: 'payable',
+        sourceId: selectedPayable.id
+      });
+      
+      setPaymentDialogOpen(false);
+      setSelectedPayable(null);
+      setSelectedAccountId('');
       
       toast({
         title: "Pagamento registrado",
@@ -326,6 +391,40 @@ export default function Payables() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para seleção de conta no pagamento */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecionar Conta para Pagamento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="account">Conta *</Label>
+              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma conta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name} - {account.type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmPayment}>
+                Confirmar Pagamento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isFormOpen && (
         <PayableForm

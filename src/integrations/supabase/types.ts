@@ -83,6 +83,7 @@ export type Database = {
       }
       payable_accounts: {
         Row: {
+          account_id: string | null
           category_id: string
           created_at: string
           due_date: string
@@ -99,6 +100,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          account_id?: string | null
           category_id: string
           created_at?: string
           due_date: string
@@ -115,6 +117,7 @@ export type Database = {
           value: number
         }
         Update: {
+          account_id?: string | null
           category_id?: string
           created_at?: string
           due_date?: string
@@ -131,6 +134,13 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "payable_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payable_accounts_category_id_fkey"
             columns: ["category_id"]
@@ -156,6 +166,7 @@ export type Database = {
       }
       receivable_accounts: {
         Row: {
+          account_id: string | null
           category_id: string
           client_id: string
           created_at: string
@@ -172,6 +183,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          account_id?: string | null
           category_id: string
           client_id: string
           created_at?: string
@@ -188,6 +200,7 @@ export type Database = {
           value: number
         }
         Update: {
+          account_id?: string | null
           category_id?: string
           client_id?: string
           created_at?: string
@@ -204,6 +217,13 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "receivable_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "receivable_accounts_category_id_fkey"
             columns: ["category_id"]
@@ -229,6 +249,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          account_id: string | null
           category_id: string
           client_supplier_id: string
           created_at: string
@@ -241,6 +262,7 @@ export type Database = {
           value: number
         }
         Insert: {
+          account_id?: string | null
           category_id: string
           client_supplier_id: string
           created_at?: string
@@ -253,6 +275,7 @@ export type Database = {
           value: number
         }
         Update: {
+          account_id?: string | null
           category_id?: string
           client_supplier_id?: string
           created_at?: string
@@ -265,6 +288,13 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_category_id_fkey"
             columns: ["category_id"]

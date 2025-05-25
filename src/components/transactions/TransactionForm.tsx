@@ -22,6 +22,7 @@ const formSchema = z.object({
   type: z.enum(['receita', 'despesa']),
   clientSupplierId: z.string().min(1, 'Selecione um cliente ou fornecedor'),
   categoryId: z.string().min(1, 'Selecione uma categoria'),
+  accountId: z.string().min(1, 'Selecione uma conta'),
   value: z.string().min(1, 'Valor é obrigatório'),
   paymentDate: z.date({
     required_error: 'Data de pagamento é obrigatória',
@@ -36,7 +37,7 @@ interface TransactionFormProps {
 }
 
 export default function TransactionForm({ transaction, onSubmit, onCancel }: TransactionFormProps) {
-  const { clientsSuppliers, categories, addTransaction, updateTransaction, addCategory, addClientSupplier } = useFinance();
+  const { clientsSuppliers, categories, accounts, addTransaction, updateTransaction, addCategory, addClientSupplier } = useFinance();
   const [showNewCategoryForm, setShowNewCategoryForm] = useState(false);
   const [showNewClientSupplierForm, setShowNewClientSupplierForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -50,6 +51,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel }: Tra
       type: transaction?.type || 'receita',
       clientSupplierId: transaction?.clientSupplierId || '',
       categoryId: transaction?.categoryId || '',
+      accountId: transaction?.accountId || '',
       value: transaction?.value.toString() || '',
       paymentDate: transaction?.paymentDate ? new Date(transaction.paymentDate) : new Date(),
       observations: transaction?.observations || '',
@@ -73,6 +75,7 @@ export default function TransactionForm({ transaction, onSubmit, onCancel }: Tra
       type: values.type,
       clientSupplierId: values.clientSupplierId,
       categoryId: values.categoryId,
+      accountId: values.accountId,
       value: parseFloat(values.value),
       paymentDate: values.paymentDate,
       observations: values.observations,
@@ -131,6 +134,31 @@ export default function TransactionForm({ transaction, onSubmit, onCancel }: Tra
                     <SelectContent>
                       <SelectItem value="receita">Receita</SelectItem>
                       <SelectItem value="despesa">Despesa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Conta *</FormLabel>
+                <FormControl>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} - {account.type}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </FormControl>
