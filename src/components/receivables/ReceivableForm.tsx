@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,16 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { useFinance } from "@/contexts/FinanceContext";
 import { ReceivableAccount } from "@/types";
-import { format, parse, isValid } from "date-fns";
 
 const formSchema = z.object({
   clientId: z.string().min(1, 'Selecione um cliente'),
   categoryId: z.string().min(1, 'Selecione uma categoria'),
   accountId: z.string().optional(),
   value: z.string().min(1, 'Valor é obrigatório'),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+  dueDate: z.date({
+    required_error: "Data de vencimento é obrigatória",
+  }),
   observations: z.string().optional(),
   installmentType: z.enum(['unico', 'parcelado', 'recorrente']),
   installments: z.string().optional(),
@@ -50,7 +56,7 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
       categoryId: receivable?.categoryId || '',
       accountId: receivable?.accountId || '',
       value: receivable?.value.toString() || '',
-      dueDate: receivable?.dueDate ? format(new Date(receivable.dueDate), 'dd/MM/yyyy') : '',
+      dueDate: receivable?.dueDate ? new Date(receivable.dueDate) : undefined,
       observations: receivable?.observations || '',
       installmentType: receivable?.installmentType || 'unico',
       installments: receivable?.installments?.toString() || '',
@@ -62,20 +68,12 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
   const installmentType = form.watch('installmentType');
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Parse da data no formato DD/MM/YYYY
-    const parsedDate = parse(values.dueDate, 'dd/MM/yyyy', new Date());
-    
-    if (!isValid(parsedDate)) {
-      form.setError('dueDate', { message: 'Data inválida. Use o formato DD/MM/AAAA' });
-      return;
-    }
-
     const receivableData = {
       clientId: values.clientId,
       categoryId: values.categoryId,
       accountId: values.accountId || undefined,
       value: parseFloat(values.value),
-      dueDate: parsedDate,
+      dueDate: values.dueDate,
       observations: values.observations,
       installmentType: values.installmentType,
       installments: values.installmentType === 'parcelado' ? parseInt(values.installments || '1') : undefined,
@@ -299,20 +297,45 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
               control={form.control}
               name="dueDate"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Data de Vencimento *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="DD/MM/AAAA"
-                      {...field}
-                    />
-                  </FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecione uma data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
+          
           <FormField
             control={form.control}
             name="installmentType"

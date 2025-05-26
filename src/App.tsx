@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FinanceProvider } from "@/contexts/FinanceContext";
+import Footer from "@/components/Footer";
 import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Categories from "./pages/Categories";
@@ -26,23 +27,26 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <SidebarProvider>
-            <div className="min-h-screen flex w-full bg-gray-50">
-              <AppSidebar />
-              <main className="flex-1">
-                <div className="p-6">
-                  <SidebarTrigger className="mb-4" />
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/accounts" element={<Accounts />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/clients-suppliers" element={<ClientsSuppliers />} />
-                    <Route path="/payables" element={<Payables />} />
-                    <Route path="/receivables" element={<Receivables />} />
-                    <Route path="/transactions" element={<Transactions />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-              </main>
+            <div className="min-h-screen flex flex-col w-full bg-gray-50">
+              <div className="flex flex-1">
+                <AppSidebar />
+                <main className="flex-1">
+                  <div className="p-6">
+                    <SidebarTrigger className="mb-4" />
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/accounts" element={<Accounts />} />
+                      <Route path="/categories" element={<Categories />} />
+                      <Route path="/clients-suppliers" element={<ClientsSuppliers />} />
+                      <Route path="/payables" element={<Payables />} />
+                      <Route path="/receivables" element={<Receivables />} />
+                      <Route path="/transactions" element={<Transactions />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </main>
+              </div>
+              <Footer />
             </div>
           </SidebarProvider>
         </BrowserRouter>
