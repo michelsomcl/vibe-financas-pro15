@@ -29,22 +29,22 @@ export default function Dashboard() {
     return paymentDate >= monthStart && paymentDate <= monthEnd;
   });
 
-  // Calcular totais incluindo lançamentos manuais
+  // Calcular totais das contas (sem duplicação)
   const paidExpenses = currentMonthPayables.filter(p => p.isPaid).reduce((sum, p) => sum + p.value, 0);
   const unpaidExpenses = currentMonthPayables.filter(p => !p.isPaid).reduce((sum, p) => sum + p.value, 0);
   const receivedRevenues = currentMonthReceivables.filter(r => r.isReceived).reduce((sum, r) => sum + r.value, 0);
   const unreceiveredRevenues = currentMonthReceivables.filter(r => !r.isReceived).reduce((sum, r) => sum + r.value, 0);
 
-  // Incluir lançamentos manuais nos totais
+  // Calcular apenas lançamentos manuais (não vindos de contas a pagar/receber)
   const manualExpenses = currentMonthTransactions
-    .filter(t => t.type === 'despesa')
+    .filter(t => t.type === 'despesa' && t.sourceType === 'manual')
     .reduce((sum, t) => sum + t.value, 0);
 
   const manualRevenues = currentMonthTransactions
-    .filter(t => t.type === 'receita')
+    .filter(t => t.type === 'receita' && t.sourceType === 'manual')
     .reduce((sum, t) => sum + t.value, 0);
 
-  // Totais finais incluindo lançamentos manuais
+  // Totais finais (sem duplicação)
   const totalPaidExpenses = paidExpenses + manualExpenses;
   const totalReceivedRevenues = receivedRevenues + manualRevenues;
 
@@ -55,7 +55,7 @@ export default function Dashboard() {
   const overduePayables = payableAccounts.filter(p => !p.isPaid && isAfter(new Date(), new Date(p.dueDate))).reduce((sum, p) => sum + p.value, 0);
   const overdueReceivables = receivableAccounts.filter(r => !r.isReceived && isAfter(new Date(), new Date(r.dueDate))).reduce((sum, r) => sum + r.value, 0);
 
-  // Dados para gráficos
+  // Dados para gráficos (usar todos os lançamentos do mês para análise por categoria)
   const expensesByCategory = categories
     .filter(c => c.type === 'despesa')
     .map(cat => {
