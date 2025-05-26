@@ -54,7 +54,7 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
     defaultValues: {
       clientId: receivable?.clientId || '',
       categoryId: receivable?.categoryId || '',
-      accountId: receivable?.accountId || '',
+      accountId: receivable?.accountId || undefined,
       value: receivable?.value.toString() || '',
       dueDate: receivable?.dueDate ? new Date(receivable.dueDate) : undefined,
       observations: receivable?.observations || '',
@@ -209,7 +209,7 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
                 <FormItem>
                   <FormLabel>Conta (Opcional)</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value || ""} onValueChange={(value) => field.onChange(value || undefined)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma conta (opcional)" />
                       </SelectTrigger>
