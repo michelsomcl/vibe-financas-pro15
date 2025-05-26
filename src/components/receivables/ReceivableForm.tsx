@@ -214,7 +214,6 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
                         <SelectValue placeholder="Selecione uma conta (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma conta selecionada</SelectItem>
                         {accounts.map((account) => (
                           <SelectItem key={account.id} value={account.id}>
                             {account.name} - {account.type}
