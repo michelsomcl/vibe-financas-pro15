@@ -9,6 +9,12 @@ import ReceivablesList from "@/components/receivables/ReceivablesList";
 import ReceivableAccountDialog from "@/components/receivables/ReceivableAccountDialog";
 import { ReceivableAccount } from "@/types";
 import { useReceivableActions } from "@/hooks/useReceivableActions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Receivables() {
   const { 
@@ -99,16 +105,23 @@ export default function Receivables() {
         </CardContent>
       </Card>
 
-      {isFormOpen && (
-        <ReceivableForm
-          receivable={editingReceivable}
-          onSubmit={handleFormSubmit}
-          onCancel={() => {
-            setIsFormOpen(false);
-            setEditingReceivable(null);
-          }}
-        />
-      )}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingReceivable ? 'Editar Conta a Receber' : 'Nova Conta a Receber'}
+            </DialogTitle>
+          </DialogHeader>
+          <ReceivableForm
+            receivable={editingReceivable}
+            onSubmit={handleFormSubmit}
+            onCancel={() => {
+              setIsFormOpen(false);
+              setEditingReceivable(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       <ReceivableAccountDialog
         isOpen={isAccountDialogOpen}
