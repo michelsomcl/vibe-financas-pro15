@@ -1,7 +1,7 @@
 
-import { useToast } from "@/hooks/use-toast";
 import { useFinance } from "@/contexts/FinanceContext";
 import { ReceivableAccount } from "@/types";
+import { toast } from "@/hooks/use-toast";
 
 export function useReceivableActions() {
   const { 
@@ -9,30 +9,18 @@ export function useReceivableActions() {
     deleteReceivableAccount,
     addTransaction,
     deleteTransaction,
-    transactions,
-    receivableAccounts
+    transactions
   } = useFinance();
-  const { toast } = useToast();
 
   const handleMarkAsReceived = async (receivable: ReceivableAccount, accountId?: string) => {
     try {
-      // Check if an account is required but not provided
-      if (!receivable.accountId && !accountId) {
-        toast({
-          title: "Erro",
-          description: "É necessário selecionar uma conta para confirmar o recebimento.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // First check if a transaction for this receivable already exists
+      // Verificar se já existe uma transação para este recebimento
       const existingTransaction = transactions.find(
         t => t.sourceType === 'receivable' && t.sourceId === receivable.id
       );
       
       if (existingTransaction) {
-        // If a transaction already exists, just update the receivable status
+        // Se já existe transação, apenas atualizar o status
         await updateReceivableAccount(receivable.id, {
           isReceived: true,
           receivedDate: new Date(),
@@ -43,29 +31,35 @@ export function useReceivableActions() {
           title: "Status atualizado",
           description: "A conta foi marcada como recebida."
         });
-        return; // Return early to prevent duplicate transaction creation
+        return;
       }
-
-      // Update the receivable to mark it as received FIRST
+      
       const receivedDate = new Date();
       const finalAccountId = accountId || receivable.accountId;
       
+      if (!finalAccountId) {
+        toast({
+          title: "Erro",
+          description: "Uma conta deve ser selecionada para o recebimento.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Primeiro marcar como recebido
       await updateReceivableAccount(receivable.id, {
         isReceived: true,
         receivedDate,
         accountId: finalAccountId
       });
       
-      // Create a corresponding transaction for this receipt ONLY if one doesn't exist
-      // Use Math.round to ensure exact decimal precision
-      const transactionValue = receivable.value;
-      
+      // Depois criar o lançamento
       await addTransaction({
         type: 'receita',
         clientSupplierId: receivable.clientId,
         categoryId: receivable.categoryId,
-        accountId: finalAccountId!,
-        value: transactionValue, // Ensure we're using the exact value without rounding issues
+        accountId: finalAccountId,
+        value: receivable.value,
         paymentDate: receivedDate,
         observations: receivable.observations,
         sourceType: 'receivable',
@@ -88,13 +82,14 @@ export function useReceivableActions() {
 
   const handleMarkAsNotReceived = async (receivable: ReceivableAccount) => {
     try {
-      // Mark the account as not received
+      // Primeiro marca a conta como não recebida
       await updateReceivableAccount(receivable.id, {
         isReceived: false,
-        receivedDate: undefined
+        receivedDate: undefined,
+        accountId: undefined
       });
       
-      // Find and remove the corresponding transaction
+      // Encontra e remove o lançamento correspondente
       const relatedTransaction = transactions.find(
         t => t.sourceType === 'receivable' && t.sourceId === receivable.id
       );
@@ -124,21 +119,15 @@ export function useReceivableActions() {
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir esta conta a receber?')) {
       try {
-        // Check if this receivable has an associated transaction (is received)
-        const receivable = receivableAccounts.find(r => r.id === id);
+        // Verificar se existe transação relacionada
+        const relatedTransaction = transactions.find(
+          t => t.sourceType === 'receivable' && t.sourceId === id
+        );
         
-        if (receivable?.isReceived) {
-          // Find and delete the related transaction first
-          const relatedTransaction = transactions.find(
-            t => t.sourceType === 'receivable' && t.sourceId === id
-          );
-          
-          if (relatedTransaction) {
-            await deleteTransaction(relatedTransaction.id);
-          }
+        if (relatedTransaction) {
+          await deleteTransaction(relatedTransaction.id);
         }
         
-        // Then delete the receivable
         await deleteReceivableAccount(id);
         
         toast({

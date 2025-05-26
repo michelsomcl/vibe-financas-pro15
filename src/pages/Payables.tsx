@@ -102,11 +102,13 @@ export default function Payables() {
     }
 
     try {
+      // Verificar se já existe uma transação para este pagamento
       const existingTransaction = transactions.find(
         t => t.sourceType === 'payable' && t.sourceId === payable.id
       );
       
       if (existingTransaction) {
+        // Se já existe transação, apenas atualizar o status
         await updatePayableAccount(payable.id, {
           isPaid: true,
           paidDate: new Date()
@@ -120,11 +122,15 @@ export default function Payables() {
       }
       
       const paidDate = new Date();
+      
+      // Primeiro marcar como pago
       await updatePayableAccount(payable.id, {
         isPaid: true,
-        paidDate
+        paidDate,
+        accountId: payable.accountId
       });
       
+      // Depois criar o lançamento
       await addTransaction({
         type: 'despesa',
         clientSupplierId: payable.supplierId,
@@ -164,14 +170,14 @@ export default function Payables() {
     try {
       const paidDate = new Date();
       
-      // Atualizar a conta a pagar com a conta selecionada
+      // Primeiro marcar como pago com a conta selecionada
       await updatePayableAccount(selectedPayable.id, {
         isPaid: true,
         paidDate,
         accountId: selectedAccountId
       });
       
-      // Criar o lançamento
+      // Depois criar o lançamento
       await addTransaction({
         type: 'despesa',
         clientSupplierId: selectedPayable.supplierId,
@@ -204,13 +210,14 @@ export default function Payables() {
 
   const handleMarkAsUnpaid = async (payable: PayableAccount) => {
     try {
-      // 1. Marca a conta como não paga
+      // Primeiro marca a conta como não paga
       await updatePayableAccount(payable.id, {
         isPaid: false,
-        paidDate: undefined
+        paidDate: undefined,
+        accountId: undefined
       });
       
-      // 2. Encontra e remove o lançamento correspondente
+      // Encontra e remove o lançamento correspondente
       const relatedTransaction = transactions.find(
         t => t.sourceType === 'payable' && t.sourceId === payable.id
       );
@@ -260,7 +267,6 @@ export default function Payables() {
     }
     
     const today = new Date();
-    // Ajuste para garantir comparação correta de datas
     const dueDate = new Date(payable.dueDate);
     
     if (dueDate < today) {
@@ -291,7 +297,6 @@ export default function Payables() {
   }
 
   const formatDate = (date: Date) => {
-    // Garantir formatação correta de data
     return format(new Date(date.getTime() + date.getTimezoneOffset() * 60000), 'dd/MM/yyyy', { locale: ptBR });
   };
 

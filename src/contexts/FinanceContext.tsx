@@ -457,6 +457,20 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         };
         
         setTransactions(prev => [newTransaction, ...prev]);
+        
+        // Atualizar o saldo da conta automaticamente
+        if (transaction.accountId) {
+          setAccounts(prev => prev.map(account => {
+            if (account.id === transaction.accountId) {
+              const newBalance = transaction.type === 'receita' 
+                ? account.currentBalance + transaction.value
+                : account.currentBalance - transaction.value;
+              return { ...account, currentBalance: newBalance };
+            }
+            return account;
+          }));
+        }
+        
         toast({
           title: "Sucesso",
           description: "Lançamento criado com sucesso"
@@ -474,6 +488,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
+      // Buscar a transação atual para reverter o saldo
+      const currentTransaction = transactions.find(t => t.id === id);
+      
       const updateData: any = {};
       
       if (updates.type) updateData.type = updates.type;
@@ -499,6 +516,37 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         )
       );
 
+      // Atualizar saldos das contas se necessário
+      if (currentTransaction && (updates.value !== undefined || updates.type || updates.accountId !== undefined)) {
+        setAccounts(prev => prev.map(account => {
+          let newBalance = account.currentBalance;
+          
+          // Reverter a transação antiga
+          if (account.id === currentTransaction.accountId) {
+            if (currentTransaction.type === 'receita') {
+              newBalance -= currentTransaction.value;
+            } else {
+              newBalance += currentTransaction.value;
+            }
+          }
+          
+          // Aplicar a nova transação
+          const finalAccountId = updates.accountId !== undefined ? updates.accountId : currentTransaction.accountId;
+          const finalType = updates.type || currentTransaction.type;
+          const finalValue = updates.value !== undefined ? updates.value : currentTransaction.value;
+          
+          if (account.id === finalAccountId) {
+            if (finalType === 'receita') {
+              newBalance += finalValue;
+            } else {
+              newBalance -= finalValue;
+            }
+          }
+          
+          return { ...account, currentBalance: newBalance };
+        }));
+      }
+
       toast({
         title: "Sucesso",
         description: "Lançamento atualizado com sucesso"
@@ -515,6 +563,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const deleteTransaction = async (id: string) => {
     try {
+      // Buscar a transação antes de deletar para reverter o saldo
+      const transactionToDelete = transactions.find(t => t.id === id);
+      
       const { error } = await supabase
         .from('transactions')
         .delete()
@@ -523,6 +574,19 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       setTransactions(prev => prev.filter(item => item.id !== id));
+      
+      // Reverter o saldo da conta
+      if (transactionToDelete && transactionToDelete.accountId) {
+        setAccounts(prev => prev.map(account => {
+          if (account.id === transactionToDelete.accountId) {
+            const newBalance = transactionToDelete.type === 'receita' 
+              ? account.currentBalance - transactionToDelete.value
+              : account.currentBalance + transactionToDelete.value;
+            return { ...account, currentBalance: newBalance };
+          }
+          return account;
+        }));
+      }
       
       toast({
         title: "Sucesso",
