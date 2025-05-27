@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -100,41 +99,57 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
       parentId: receivable?.parentId,
     };
 
-    if (receivable) {
-      await updateReceivableAccount(receivable.id, receivableData);
-    } else {
-      // Criar o lançamento principal
-      const mainReceivable = await addReceivableAccount(receivableData);
-      
-      // Criar lançamentos automáticos para parcelado ou recorrente
-      if (values.installmentType === 'parcelado' && values.installments) {
-        const installmentCount = parseInt(values.installments);
+    try {
+      if (receivable) {
+        await updateReceivableAccount(receivable.id, receivableData);
+      } else {
+        // Criar o lançamento principal
+        console.log('Criando conta a receber principal:', receivableData);
+        const mainReceivableResult = await addReceivableAccount(receivableData);
+        console.log('Resultado da conta a receber principal:', mainReceivableResult);
         
-        for (let i = 1; i < installmentCount; i++) {
-          const nextDate = addMonths(values.dueDate, i);
-          await addReceivableAccount({
-            ...receivableData,
-            dueDate: nextDate,
-            parentId: mainReceivable.id,
-            observations: `${receivableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
-          });
-        }
-      } else if (values.installmentType === 'recorrente' && values.recurrenceType && values.recurrenceCount) {
-        const recurrenceCount = parseInt(values.recurrenceCount);
-        
-        for (let i = 1; i < recurrenceCount; i++) {
-          const nextDate = calculateNextDate(values.dueDate, values.recurrenceType, i);
-          await addReceivableAccount({
-            ...receivableData,
-            dueDate: nextDate,
-            parentId: mainReceivable.id,
-            observations: `${receivableData.observations || ''} - Recorrência ${i + 1}/${recorrenceCount}`.trim()
-          });
+        // Criar lançamentos automáticos para parcelado ou recorrente
+        if (values.installmentType === 'parcelado' && values.installments) {
+          const installmentCount = parseInt(values.installments);
+          
+          console.log(`Criando ${installmentCount - 1} parcelas adicionais`);
+          
+          for (let i = 1; i < installmentCount; i++) {
+            const nextDate = addMonths(values.dueDate, i);
+            const installmentData = {
+              ...receivableData,
+              dueDate: nextDate,
+              parentId: mainReceivableResult?.id,
+              observations: `${receivableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
+            };
+            
+            console.log(`Criando parcela ${i + 1}:`, installmentData);
+            await addReceivableAccount(installmentData);
+          }
+        } else if (values.installmentType === 'recorrente' && values.recurrenceType && values.recurrenceCount) {
+          const recurrenceCount = parseInt(values.recurrenceCount);
+          
+          console.log(`Criando ${recurrenceCount - 1} recorrências adicionais`);
+          
+          for (let i = 1; i < recurrenceCount; i++) {
+            const nextDate = calculateNextDate(values.dueDate, values.recurrenceType, i);
+            const recurrenceData = {
+              ...receivableData,
+              dueDate: nextDate,
+              parentId: mainReceivableResult?.id,
+              observations: `${receivableData.observations || ''} - Recorrência ${i + 1}/${recurrenceCount}`.trim()
+            };
+            
+            console.log(`Criando recorrência ${i + 1}:`, recurrenceData);
+            await addReceivableAccount(recurrenceData);
+          }
         }
       }
+      
+      onSubmit();
+    } catch (error) {
+      console.error('Erro ao salvar conta a receber:', error);
     }
-    
-    onSubmit();
   };
 
   const handleNewCategory = async () => {

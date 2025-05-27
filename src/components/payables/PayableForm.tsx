@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,34 +112,46 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
         await updatePayableAccount(payable.id, payableData);
       } else {
         // Criar o lançamento principal
-        const mainPayable = await addPayableAccount(payableData);
+        console.log('Criando lançamento principal:', payableData);
+        const mainPayableResult = await addPayableAccount(payableData);
+        console.log('Resultado do lançamento principal:', mainPayableResult);
         
         // Criar lançamentos automáticos para parcelado ou recorrente
         if (formData.installmentType === 'parcelado' && formData.installments) {
           const installmentCount = parseInt(formData.installments);
           const baseDate = new Date(formData.dueDate);
           
+          console.log(`Criando ${installmentCount - 1} parcelas adicionais`);
+          
           for (let i = 1; i < installmentCount; i++) {
             const nextDate = addMonths(baseDate, i);
-            await addPayableAccount({
+            const installmentData = {
               ...payableData,
               dueDate: nextDate,
-              parentId: mainPayable.id,
+              parentId: mainPayableResult?.id,
               observations: `${payableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
-            });
+            };
+            
+            console.log(`Criando parcela ${i + 1}:`, installmentData);
+            await addPayableAccount(installmentData);
           }
         } else if (formData.installmentType === 'recorrente' && formData.recurrenceType && formData.recurrenceCount) {
           const recurrenceCount = parseInt(formData.recurrenceCount);
           const baseDate = new Date(formData.dueDate);
           
+          console.log(`Criando ${recurrenceCount - 1} recorrências adicionais`);
+          
           for (let i = 1; i < recurrenceCount; i++) {
             const nextDate = calculateNextDate(baseDate, formData.recurrenceType as 'diario' | 'semanal' | 'quinzenal' | 'mensal', i);
-            await addPayableAccount({
+            const recurrenceData = {
               ...payableData,
               dueDate: nextDate,
-              parentId: mainPayable.id,
+              parentId: mainPayableResult?.id,
               observations: `${payableData.observations || ''} - Recorrência ${i + 1}/${recurrenceCount}`.trim()
-            });
+            };
+            
+            console.log(`Criando recorrência ${i + 1}:`, recurrenceData);
+            await addPayableAccount(recurrenceData);
           }
         }
       }
