@@ -14,35 +14,33 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ReceivableAccount, ClientSupplier, Category } from "@/types";
-import ReceivableStatusBadge from "./ReceivableStatusBadge";
-import ReceivableActions from "./ReceivableActions";
-import { ArrowUpDown, Trash2 } from "lucide-react";
+import { PayableAccount, ClientSupplier, Category } from "@/types";
+import { ArrowUpDown, Trash2, Check, X, Edit } from "lucide-react";
 
-interface ReceivablesListProps {
-  receivableAccounts: ReceivableAccount[];
-  clients: ClientSupplier[];
-  revenueCategories: Category[];
-  onMarkAsReceived: (receivable: ReceivableAccount) => void;
-  onMarkAsNotReceived: (receivable: ReceivableAccount) => void;
-  onEdit: (receivable: ReceivableAccount) => void;
+interface PayablesListProps {
+  payableAccounts: PayableAccount[];
+  suppliers: ClientSupplier[];
+  expenseCategories: Category[];
+  onMarkAsPaid: (payable: PayableAccount) => void;
+  onMarkAsUnpaid: (payable: PayableAccount) => void;
+  onEdit: (payable: PayableAccount) => void;
   onDelete: (id: string) => void;
 }
 
-export default function ReceivablesList({
-  receivableAccounts,
-  clients,
-  revenueCategories,
-  onMarkAsReceived,
-  onMarkAsNotReceived,
+export default function PayablesList({
+  payableAccounts,
+  suppliers,
+  expenseCategories,
+  onMarkAsPaid,
+  onMarkAsUnpaid,
   onEdit,
   onDelete
-}: ReceivablesListProps) {
+}: PayablesListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<'dueDate' | 'value' | 'client' | 'category'>('dueDate');
+  const [sortField, setSortField] = useState<'dueDate' | 'value' | 'supplier' | 'category'>('dueDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [filters, setFilters] = useState({
-    client: '',
+    supplier: '',
     category: '',
     value: '',
     dueDate: '',
@@ -50,13 +48,13 @@ export default function ReceivablesList({
     type: ''
   });
 
-  const getClientName = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
-    return client?.name || 'Cliente não encontrado';
+  const getSupplierName = (supplierId: string) => {
+    const supplier = suppliers.find(s => s.id === supplierId);
+    return supplier?.name || 'Fornecedor não encontrado';
   };
 
   const getCategoryName = (categoryId: string) => {
-    const category = revenueCategories.find(c => c.id === categoryId);
+    const category = expenseCategories.find(c => c.id === categoryId);
     return category?.name || 'Categoria não encontrada';
   };
 
@@ -67,45 +65,48 @@ export default function ReceivablesList({
     }).format(value);
   };
 
-  const formatDate = (date: Date | string) => {
-    let dateStr: string;
-    if (date instanceof Date) {
-      dateStr = date.toISOString().split('T')[0];
-    } else {
-      dateStr = typeof date === 'string' ? date.split('T')[0] : date;
-    }
-    
-    const parts = dateStr.split('-').map(Number);
-    const year = parts[0];
-    const month = parts[1] - 1;
-    const day = parts[2];
-    
-    const dateObj = new Date(year, month, day);
-    
-    return format(dateObj, 'dd/MM/yyyy', { locale: ptBR });
+  const formatDate = (date: Date) => {
+    return format(new Date(date.getTime() + date.getTimezoneOffset() * 60000), 'dd/MM/yyyy', { locale: ptBR });
   };
 
-  const getStatus = (receivable: ReceivableAccount) => {
-    if (receivable.isReceived) return 'Recebido';
+  const getStatusBadge = (payable: PayableAccount) => {
+    if (payable.isPaid) {
+      return <Badge variant="default" className="bg-green-500">Pago</Badge>;
+    }
+    
     const today = new Date();
-    const dueDate = new Date(receivable.dueDate);
+    const dueDate = new Date(payable.dueDate);
+    
+    if (dueDate < today) {
+      return <Badge variant="destructive">Vencido</Badge>;
+    } else if (dueDate.getTime() - today.getTime() <= 7 * 24 * 60 * 60 * 1000) {
+      return <Badge variant="secondary" className="bg-yellow-500 text-white">Vence em breve</Badge>;
+    } else {
+      return <Badge variant="outline">Pendente</Badge>;
+    }
+  };
+
+  const getStatus = (payable: PayableAccount) => {
+    if (payable.isPaid) return 'Pago';
+    const today = new Date();
+    const dueDate = new Date(payable.dueDate);
     if (dueDate < today) return 'Vencido';
     if (dueDate.getTime() - today.getTime() <= 7 * 24 * 60 * 60 * 1000) return 'Vence em breve';
     return 'Pendente';
   };
 
-  const filteredAndSortedReceivables = useMemo(() => {
-    let filtered = receivableAccounts.filter(receivable => {
-      const clientName = getClientName(receivable.clientId).toLowerCase();
-      const categoryName = getCategoryName(receivable.categoryId).toLowerCase();
-      const status = getStatus(receivable).toLowerCase();
-      const type = receivable.installmentType;
+  const filteredAndSortedPayables = useMemo(() => {
+    let filtered = payableAccounts.filter(payable => {
+      const supplierName = getSupplierName(payable.supplierId).toLowerCase();
+      const categoryName = getCategoryName(payable.categoryId).toLowerCase();
+      const status = getStatus(payable).toLowerCase();
+      const type = payable.installmentType;
       
       return (
-        clientName.includes(filters.client.toLowerCase()) &&
+        supplierName.includes(filters.supplier.toLowerCase()) &&
         categoryName.includes(filters.category.toLowerCase()) &&
-        formatCurrency(receivable.value).includes(filters.value) &&
-        formatDate(receivable.dueDate).includes(filters.dueDate) &&
+        formatCurrency(payable.value).includes(filters.value) &&
+        formatDate(new Date(payable.dueDate)).includes(filters.dueDate) &&
         status.includes(filters.status.toLowerCase()) &&
         type.includes(filters.type.toLowerCase())
       );
@@ -120,10 +121,10 @@ export default function ReceivablesList({
         return sortDirection === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
       } else if (sortField === 'value') {
         return sortDirection === 'asc' ? a.value - b.value : b.value - a.value;
-      } else if (sortField === 'client') {
-        const aClient = getClientName(a.clientId);
-        const bClient = getClientName(b.clientId);
-        return sortDirection === 'asc' ? aClient.localeCompare(bClient) : bClient.localeCompare(aClient);
+      } else if (sortField === 'supplier') {
+        const aSupplier = getSupplierName(a.supplierId);
+        const bSupplier = getSupplierName(b.supplierId);
+        return sortDirection === 'asc' ? aSupplier.localeCompare(bSupplier) : bSupplier.localeCompare(aSupplier);
       } else if (sortField === 'category') {
         const aCategory = getCategoryName(a.categoryId);
         const bCategory = getCategoryName(b.categoryId);
@@ -133,7 +134,7 @@ export default function ReceivablesList({
     });
 
     return filtered;
-  }, [receivableAccounts, filters, sortField, sortDirection, clients, revenueCategories]);
+  }, [payableAccounts, filters, sortField, sortDirection, suppliers, expenseCategories]);
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
@@ -145,14 +146,14 @@ export default function ReceivablesList({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === filteredAndSortedReceivables.length) {
+    if (selectedIds.length === filteredAndSortedPayables.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredAndSortedReceivables.map(r => r.id));
+      setSelectedIds(filteredAndSortedPayables.map(p => p.id));
     }
   };
 
-  const handleSelectReceivable = (id: string) => {
+  const handleSelectPayable = (id: string) => {
     setSelectedIds(prev => 
       prev.includes(id) 
         ? prev.filter(selectedId => selectedId !== id)
@@ -162,16 +163,16 @@ export default function ReceivablesList({
 
   const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return;
-    if (confirm(`Tem certeza que deseja excluir ${selectedIds.length} contas a receber?`)) {
+    if (confirm(`Tem certeza que deseja excluir ${selectedIds.length} contas a pagar?`)) {
       selectedIds.forEach(id => onDelete(id));
       setSelectedIds([]);
     }
   };
 
-  if (receivableAccounts.length === 0) {
+  if (payableAccounts.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Nenhuma conta a receber cadastrada</p>
+        <p className="text-gray-500">Nenhuma conta a pagar cadastrada</p>
       </div>
     );
   }
@@ -181,9 +182,9 @@ export default function ReceivablesList({
       {/* Filtros */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
         <Input
-          placeholder="Filtrar por cliente"
-          value={filters.client}
-          onChange={(e) => setFilters(prev => ({ ...prev, client: e.target.value }))}
+          placeholder="Filtrar por fornecedor"
+          value={filters.supplier}
+          onChange={(e) => setFilters(prev => ({ ...prev, supplier: e.target.value }))}
         />
         <Input
           placeholder="Filtrar por categoria"
@@ -228,13 +229,13 @@ export default function ReceivablesList({
           <TableRow>
             <TableHead className="w-12">
               <Checkbox 
-                checked={selectedIds.length === filteredAndSortedReceivables.length && filteredAndSortedReceivables.length > 0}
+                checked={selectedIds.length === filteredAndSortedPayables.length && filteredAndSortedPayables.length > 0}
                 onCheckedChange={handleSelectAll}
               />
             </TableHead>
             <TableHead>
-              <Button variant="ghost" onClick={() => handleSort('client')} className="h-auto p-0 font-medium">
-                Cliente
+              <Button variant="ghost" onClick={() => handleSort('supplier')} className="h-auto p-0 font-medium">
+                Fornecedor
                 <ArrowUpDown className="ml-2 h-4 w-4" />
               </Button>
             </TableHead>
@@ -262,40 +263,67 @@ export default function ReceivablesList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredAndSortedReceivables.map((receivable) => (
-            <TableRow key={receivable.id}>
+          {filteredAndSortedPayables.map((payable) => (
+            <TableRow key={payable.id}>
               <TableCell>
                 <Checkbox 
-                  checked={selectedIds.includes(receivable.id)}
-                  onCheckedChange={() => handleSelectReceivable(receivable.id)}
+                  checked={selectedIds.includes(payable.id)}
+                  onCheckedChange={() => handleSelectPayable(payable.id)}
                 />
               </TableCell>
               <TableCell className="font-medium">
-                {getClientName(receivable.clientId)}
+                {getSupplierName(payable.supplierId)}
               </TableCell>
-              <TableCell>{getCategoryName(receivable.categoryId)}</TableCell>
-              <TableCell>{formatCurrency(receivable.value)}</TableCell>
+              <TableCell>{getCategoryName(payable.categoryId)}</TableCell>
+              <TableCell>{formatCurrency(payable.value)}</TableCell>
               <TableCell>
-                {formatDate(receivable.dueDate)}
+                {formatDate(new Date(payable.dueDate))}
               </TableCell>
-              <TableCell>
-                <ReceivableStatusBadge receivable={receivable} />
-              </TableCell>
+              <TableCell>{getStatusBadge(payable)}</TableCell>
               <TableCell>
                 <Badge variant="outline">
-                  {receivable.installmentType === 'unico' && 'Único'}
-                  {receivable.installmentType === 'parcelado' && 'Parcelado'}
-                  {receivable.installmentType === 'recorrente' && 'Recorrente'}
+                  {payable.installmentType === 'unico' && 'Único'}
+                  {payable.installmentType === 'parcelado' && 'Parcelado'}
+                  {payable.installmentType === 'recorrente' && 'Recorrente'}
                 </Badge>
               </TableCell>
               <TableCell>
-                <ReceivableActions
-                  receivable={receivable}
-                  onMarkAsReceived={onMarkAsReceived}
-                  onMarkAsNotReceived={onMarkAsNotReceived}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
+                <div className="flex items-center gap-2">
+                  {!payable.isPaid ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onMarkAsPaid(payable)}
+                      className="text-green-600 hover:text-green-700"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onMarkAsUnpaid(payable)}
+                      className="text-orange-600 hover:text-orange-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(payable)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(payable.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -113,8 +113,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
       } else {
         // Criar o lançamento principal
         console.log('Criando lançamento principal:', payableData);
-        const mainPayableResult = await addPayableAccount(payableData);
-        console.log('Resultado do lançamento principal:', mainPayableResult);
+        await addPayableAccount(payableData);
         
         // Criar lançamentos automáticos para parcelado ou recorrente
         if (formData.installmentType === 'parcelado' && formData.installments) {
@@ -128,7 +127,6 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
             const installmentData = {
               ...payableData,
               dueDate: nextDate,
-              parentId: mainPayableResult?.id,
               observations: `${payableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
             };
             
@@ -146,7 +144,6 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
             const recurrenceData = {
               ...payableData,
               dueDate: nextDate,
-              parentId: mainPayableResult?.id,
               observations: `${payableData.observations || ''} - Recorrência ${i + 1}/${recurrenceCount}`.trim()
             };
             
@@ -193,6 +190,7 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="supplier">Fornecedor *</Label>
