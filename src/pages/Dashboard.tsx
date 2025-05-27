@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFinance } from "@/contexts/FinanceContext";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
@@ -13,15 +14,29 @@ export default function Dashboard() {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Filtrar dados do mês atual
+  // Filtrar dados do mês atual - considerando data de pagamento para contas pagas
   const currentMonthPayables = payableAccounts.filter(p => {
-    const dueDate = new Date(p.dueDate);
-    return dueDate >= monthStart && dueDate <= monthEnd;
+    if (p.isPaid && p.paidDate) {
+      // Se está pago, considera a data de pagamento
+      const paidDate = new Date(p.paidDate);
+      return paidDate >= monthStart && paidDate <= monthEnd;
+    } else {
+      // Se não está pago, considera a data de vencimento
+      const dueDate = new Date(p.dueDate);
+      return dueDate >= monthStart && dueDate <= monthEnd;
+    }
   });
 
   const currentMonthReceivables = receivableAccounts.filter(r => {
-    const dueDate = new Date(r.dueDate);
-    return dueDate >= monthStart && dueDate <= monthEnd;
+    if (r.isReceived && r.receivedDate) {
+      // Se foi recebido, considera a data de recebimento
+      const receivedDate = new Date(r.receivedDate);
+      return receivedDate >= monthStart && receivedDate <= monthEnd;
+    } else {
+      // Se não foi recebido, considera a data de vencimento
+      const dueDate = new Date(r.dueDate);
+      return dueDate >= monthStart && dueDate <= monthEnd;
+    }
   });
 
   const currentMonthTransactions = transactions.filter(t => {
@@ -29,11 +44,39 @@ export default function Dashboard() {
     return paymentDate >= monthStart && paymentDate <= monthEnd;
   });
 
-  // Calcular totais das contas (sem duplicação)
-  const paidExpenses = currentMonthPayables.filter(p => p.isPaid).reduce((sum, p) => sum + p.value, 0);
-  const unpaidExpenses = currentMonthPayables.filter(p => !p.isPaid).reduce((sum, p) => sum + p.value, 0);
-  const receivedRevenues = currentMonthReceivables.filter(r => r.isReceived).reduce((sum, r) => sum + r.value, 0);
-  const unreceiveredRevenues = currentMonthReceivables.filter(r => !r.isReceived).reduce((sum, r) => sum + r.value, 0);
+  // Calcular totais das contas pagas no mês atual (usando data de pagamento)
+  const paidExpenses = payableAccounts
+    .filter(p => p.isPaid && p.paidDate)
+    .filter(p => {
+      const paidDate = new Date(p.paidDate);
+      return paidDate >= monthStart && paidDate <= monthEnd;
+    })
+    .reduce((sum, p) => sum + p.value, 0);
+
+  const receivedRevenues = receivableAccounts
+    .filter(r => r.isReceived && r.receivedDate)
+    .filter(r => {
+      const receivedDate = new Date(r.receivedDate);
+      return receivedDate >= monthStart && receivedDate <= monthEnd;
+    })
+    .reduce((sum, r) => sum + r.value, 0);
+
+  // Calcular totais das contas não pagas com vencimento no mês atual
+  const unpaidExpenses = payableAccounts
+    .filter(p => !p.isPaid)
+    .filter(p => {
+      const dueDate = new Date(p.dueDate);
+      return dueDate >= monthStart && dueDate <= monthEnd;
+    })
+    .reduce((sum, p) => sum + p.value, 0);
+
+  const unreceiveredRevenues = receivableAccounts
+    .filter(r => !r.isReceived)
+    .filter(r => {
+      const dueDate = new Date(r.dueDate);
+      return dueDate >= monthStart && dueDate <= monthEnd;
+    })
+    .reduce((sum, r) => sum + r.value, 0);
 
   // Calcular apenas lançamentos manuais (não vindos de contas a pagar/receber)
   const manualExpenses = currentMonthTransactions
