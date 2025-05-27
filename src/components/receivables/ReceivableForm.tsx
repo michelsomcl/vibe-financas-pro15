@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useFinance } from "@/contexts/FinanceContext";
@@ -67,6 +68,21 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
 
   const installmentType = form.watch('installmentType');
 
+  const calculateNextDate = (baseDate: Date, type: 'diario' | 'semanal' | 'quinzenal' | 'mensal', increment: number) => {
+    switch (type) {
+      case 'diario':
+        return addDays(baseDate, increment);
+      case 'semanal':
+        return addWeeks(baseDate, increment);
+      case 'quinzenal':
+        return addWeeks(baseDate, increment * 2);
+      case 'mensal':
+        return addMonths(baseDate, increment);
+      default:
+        return addMonths(baseDate, increment);
+    }
+  };
+
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     const receivableData = {
       clientId: values.clientId,
@@ -87,7 +103,35 @@ export default function ReceivableForm({ receivable, onSubmit, onCancel }: Recei
     if (receivable) {
       await updateReceivableAccount(receivable.id, receivableData);
     } else {
-      await addReceivableAccount(receivableData);
+      // Criar o lançamento principal
+      const mainReceivable = await addReceivableAccount(receivableData);
+      
+      // Criar lançamentos automáticos para parcelado ou recorrente
+      if (values.installmentType === 'parcelado' && values.installments) {
+        const installmentCount = parseInt(values.installments);
+        
+        for (let i = 1; i < installmentCount; i++) {
+          const nextDate = addMonths(values.dueDate, i);
+          await addReceivableAccount({
+            ...receivableData,
+            dueDate: nextDate,
+            parentId: mainReceivable.id,
+            observations: `${receivableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
+          });
+        }
+      } else if (values.installmentType === 'recorrente' && values.recurrenceType && values.recurrenceCount) {
+        const recurrenceCount = parseInt(values.recurrenceCount);
+        
+        for (let i = 1; i < recurrenceCount; i++) {
+          const nextDate = calculateNextDate(values.dueDate, values.recurrenceType, i);
+          await addReceivableAccount({
+            ...receivableData,
+            dueDate: nextDate,
+            parentId: mainReceivable.id,
+            observations: `${receivableData.observations || ''} - Recorrência ${i + 1}/${recorrenceCount}`.trim()
+          });
+        }
+      }
     }
     
     onSubmit();

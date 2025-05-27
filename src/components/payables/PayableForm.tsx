@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinance } from "@/contexts/FinanceContext";
 import { PayableAccount } from "@/types";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 
 interface PayableFormProps {
   payable?: PayableAccount | null;
@@ -68,6 +69,21 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
     }
   }, [payable]);
 
+  const calculateNextDate = (baseDate: Date, type: 'diario' | 'semanal' | 'quinzenal' | 'mensal', increment: number) => {
+    switch (type) {
+      case 'diario':
+        return addDays(baseDate, increment);
+      case 'semanal':
+        return addWeeks(baseDate, increment);
+      case 'quinzenal':
+        return addWeeks(baseDate, increment * 2);
+      case 'mensal':
+        return addMonths(baseDate, increment);
+      default:
+        return addMonths(baseDate, increment);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -96,7 +112,37 @@ export default function PayableForm({ payable, onSubmit, onCancel }: PayableForm
       if (payable) {
         await updatePayableAccount(payable.id, payableData);
       } else {
-        await addPayableAccount(payableData);
+        // Criar o lançamento principal
+        const mainPayable = await addPayableAccount(payableData);
+        
+        // Criar lançamentos automáticos para parcelado ou recorrente
+        if (formData.installmentType === 'parcelado' && formData.installments) {
+          const installmentCount = parseInt(formData.installments);
+          const baseDate = new Date(formData.dueDate);
+          
+          for (let i = 1; i < installmentCount; i++) {
+            const nextDate = addMonths(baseDate, i);
+            await addPayableAccount({
+              ...payableData,
+              dueDate: nextDate,
+              parentId: mainPayable.id,
+              observations: `${payableData.observations || ''} - Parcela ${i + 1}/${installmentCount}`.trim()
+            });
+          }
+        } else if (formData.installmentType === 'recorrente' && formData.recurrenceType && formData.recurrenceCount) {
+          const recurrenceCount = parseInt(formData.recurrenceCount);
+          const baseDate = new Date(formData.dueDate);
+          
+          for (let i = 1; i < recurrenceCount; i++) {
+            const nextDate = calculateNextDate(baseDate, formData.recurrenceType as 'diario' | 'semanal' | 'quinzenal' | 'mensal', i);
+            await addPayableAccount({
+              ...payableData,
+              dueDate: nextDate,
+              parentId: mainPayable.id,
+              observations: `${payableData.observations || ''} - Recorrência ${i + 1}/${recurrenceCount}`.trim()
+            });
+          }
+        }
       }
       onSubmit();
     } catch (error) {
