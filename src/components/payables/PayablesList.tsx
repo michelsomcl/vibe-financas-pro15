@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -25,6 +24,7 @@ interface PayablesListProps {
   onMarkAsUnpaid: (payable: PayableAccount) => void;
   onEdit: (payable: PayableAccount) => void;
   onDelete: (id: string) => void;
+  onFilteredDataChange: (filteredData: PayableAccount[]) => void;
 }
 
 export default function PayablesList({
@@ -34,7 +34,8 @@ export default function PayablesList({
   onMarkAsPaid,
   onMarkAsUnpaid,
   onEdit,
-  onDelete
+  onDelete,
+  onFilteredDataChange
 }: PayablesListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortField, setSortField] = useState<'dueDate' | 'value' | 'supplier' | 'category'>('dueDate');
@@ -135,6 +136,11 @@ export default function PayablesList({
 
     return filtered;
   }, [payableAccounts, filters, sortField, sortDirection, suppliers, expenseCategories]);
+
+  // Notify parent component when filtered data changes
+  useEffect(() => {
+    onFilteredDataChange(filteredAndSortedPayables);
+  }, [filteredAndSortedPayables, onFilteredDataChange]);
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {

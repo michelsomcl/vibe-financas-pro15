@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -27,6 +26,7 @@ interface ReceivablesListProps {
   onMarkAsNotReceived: (receivable: ReceivableAccount) => void;
   onEdit: (receivable: ReceivableAccount) => void;
   onDelete: (id: string) => void;
+  onFilteredDataChange: (filteredData: ReceivableAccount[]) => void;
 }
 
 export default function ReceivablesList({
@@ -36,7 +36,8 @@ export default function ReceivablesList({
   onMarkAsReceived,
   onMarkAsNotReceived,
   onEdit,
-  onDelete
+  onDelete,
+  onFilteredDataChange
 }: ReceivablesListProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortField, setSortField] = useState<'dueDate' | 'value' | 'client' | 'category'>('dueDate');
@@ -120,20 +121,25 @@ export default function ReceivablesList({
         return sortDirection === 'asc' ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
       } else if (sortField === 'value') {
         return sortDirection === 'asc' ? a.value - b.value : b.value - a.value;
-      } else if (sortField === 'client') {
-        const aClient = getClientName(a.clientId);
-        const bClient = getClientName(b.clientId);
-        return sortDirection === 'asc' ? aClient.localeCompare(bClient) : bClient.localeCompare(aClient);
       } else if (sortField === 'category') {
         const aCategory = getCategoryName(a.categoryId);
         const bCategory = getCategoryName(b.categoryId);
         return sortDirection === 'asc' ? aCategory.localeCompare(bCategory) : bCategory.localeCompare(aCategory);
+      } else if (sortField === 'client') {
+        const aClient = getClientName(a.clientId);
+        const bClient = getClientName(b.clientId);
+        return sortDirection === 'asc' ? aClient.localeCompare(bClient) : bClient.localeCompare(aClient);
       }
       return 0;
     });
 
     return filtered;
   }, [receivableAccounts, filters, sortField, sortDirection, clients, revenueCategories]);
+
+  // Notify parent component when filtered data changes
+  useEffect(() => {
+    onFilteredDataChange(filteredAndSortedReceivables);
+  }, [filteredAndSortedReceivables, onFilteredDataChange]);
 
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
