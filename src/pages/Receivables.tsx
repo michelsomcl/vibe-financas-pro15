@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -15,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SimpleDashboard } from "@/components/dashboard/SimpleDashboard";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function Receivables() {
   const { 
@@ -28,11 +30,22 @@ export default function Receivables() {
   const [editingReceivable, setEditingReceivable] = useState<ReceivableAccount | null>(null);
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [receivableForPayment, setReceivableForPayment] = useState<ReceivableAccount | null>(null);
+  const [filteredReceivables, setFilteredReceivables] = useState(receivableAccounts);
   
   const { handleMarkAsReceived, handleMarkAsNotReceived, handleDelete } = useReceivableActions();
 
   const clients = clientsSuppliers.filter(cs => cs.type === 'cliente');
   const revenueCategories = categories.filter(cat => cat.type === 'receita');
+
+  // Calcular total de receitas com base nos receivables filtrados
+  const totalRevenues = useMemo(() => {
+    return filteredReceivables.reduce((sum, receivable) => sum + receivable.value, 0);
+  }, [filteredReceivables]);
+
+  // Atualizar receivables filtrados quando os dados mudarem
+  React.useEffect(() => {
+    setFilteredReceivables(receivableAccounts);
+  }, [receivableAccounts]);
 
   const handleEdit = (receivable: ReceivableAccount) => {
     // Garantir que a data está correta ao editar
@@ -88,6 +101,13 @@ export default function Receivables() {
         </Button>
       </div>
 
+      <SimpleDashboard
+        title="Total de Receitas"
+        value={totalRevenues}
+        formatCurrency={formatCurrency}
+        color="green"
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>Lista de Contas a Receber</CardTitle>
@@ -101,6 +121,7 @@ export default function Receivables() {
             onMarkAsNotReceived={handleMarkAsNotReceived}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onFilteredDataChange={setFilteredReceivables}
           />
         </CardContent>
       </Card>

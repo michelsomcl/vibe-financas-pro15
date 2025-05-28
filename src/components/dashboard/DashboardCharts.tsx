@@ -20,7 +20,7 @@ export function DashboardCharts({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-tertiary">
-            Despesas por Categoria
+            Despesas Pagas por Categoria
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -55,7 +55,7 @@ export function DashboardCharts({
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-tertiary">
-            Receitas por Categoria
+            Receitas Recebidas por Categoria
           </CardTitle>
         </CardHeader>
         <CardContent>

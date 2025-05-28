@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { SimpleDashboard } from "@/components/dashboard/SimpleDashboard";
+import { formatCurrency } from "@/utils/formatCurrency";
 
 export default function Payables() {
   const { 
@@ -36,9 +38,20 @@ export default function Payables() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<PayableAccount | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [filteredPayables, setFilteredPayables] = useState(payableAccounts);
 
   const suppliers = clientsSuppliers.filter(cs => cs.type === 'fornecedor');
   const expenseCategories = categories.filter(cat => cat.type === 'despesa');
+
+  // Calcular total de despesas com base nos payables filtrados
+  const totalExpenses = useMemo(() => {
+    return filteredPayables.reduce((sum, payable) => sum + payable.value, 0);
+  }, [filteredPayables]);
+
+  // Atualizar payables filtrados quando os dados mudarem
+  React.useEffect(() => {
+    setFilteredPayables(payableAccounts);
+  }, [payableAccounts]);
 
   const handleEdit = (payable: PayableAccount) => {
     const payableWithFixedDate = {
@@ -251,6 +264,13 @@ export default function Payables() {
         </Button>
       </div>
 
+      <SimpleDashboard
+        title="Total de Despesas"
+        value={totalExpenses}
+        formatCurrency={formatCurrency}
+        color="red"
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>Lista de Contas a Pagar</CardTitle>
@@ -264,6 +284,7 @@ export default function Payables() {
             onMarkAsUnpaid={handleMarkAsUnpaid}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onFilteredDataChange={setFilteredPayables}
           />
         </CardContent>
       </Card>
