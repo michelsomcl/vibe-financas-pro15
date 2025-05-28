@@ -1,3 +1,4 @@
+
 import { 
   Home, 
   CreditCard, 
@@ -5,8 +6,7 @@ import {
   Users, 
   FileText, 
   FileCheck, 
-  TrendingUp,
-  BarChart3
+  TrendingUp 
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -56,11 +56,6 @@ const menuItems = [
     title: "Lançamentos",
     url: "/transactions",
     icon: TrendingUp,
-  },
-  {
-    title: "Relatórios",
-    url: "/reports",
-    icon: BarChart3,
   },
 ];
 
